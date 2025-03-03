@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Módulo Folha de Pagamento</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .sidebar {
+      transition: width 0.3s ease;
+    }
+    .sidebar.collapsed {
+      width: 64px; /* Largura reduzida quando recolhido */
+    }
+    .sidebar.collapsed .menu-text {
+      opacity: 0; /* Oculta o texto do menu quando recolhido */
+      transition: opacity 0.3s ease;
+    }
+    .sidebar.collapsed .submenu {
+      display: none; /* Oculta submenus quando recolhido */
+    }
+    .submenu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .submenu.open {
+      max-height: 500px; /* Altura máxima para exibir submenus */
+    }
+    .modal {
+      display: none; /* Oculta o modal por padrão */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5); /* Fundo escurecido */
+      justify-content: center;
+      align-items: center;
+    }
+    .modal.open {
+      display: flex; /* Exibe o modal quando aberto */
+    }
+    .modal-content {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 0.5rem;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .tab-content {
+      display: none; /* Oculta o conteúdo das abas por padrão */
+    }
+    .tab-content.active {
+      display: block; /* Exibe o conteúdo da aba ativa */
+    }
+    .tab-button {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .tab-button.active {
+      border-bottom-color: #3b82f6; /* Azul para a aba ativa */
+      color: #3b82f6;
+    }
+    .rotate-180 {
+      transform: rotate(180deg);
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar w-64 bg-white shadow-md">
+      <div class="p-4 flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800 menu-text">ContabiPro</h2>
+        <button id="toggle-sidebar" class="p-2 text-gray-600 hover:bg-gray-100 rounded">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+      <nav class="mt-6">
+        <ul>
+          <!-- Menu: Cadastro de Funcionários -->
+          <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+            <div class="flex justify-between items-center" onclick="toggleSubmenu('cadastro')">
+              <span class="text-gray-700 menu-text">Cadastro de Funcionários</span>
+              <svg id="cadastro-arrow" class="w-4 h-4 text-gray-500 menu-text transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+            <!-- Submenus -->
+            <ul id="cadastro-submenu" class="pl-4 mt-2 space-y-2 submenu">
+              <li class="text-sm text-gray-600 hover:bg-gray-100 cursor-pointer py-1 px-2 rounded menu-text" onclick="openModal()">Inclusão e Alteração</li>
+              <li class="text-sm text-gray-600 hover:bg-gray-100 cursor-pointer py-1 px-2 rounded menu-text">Dados Pessoais e Contratuais</li>
+              <li class="text-sm text-gray-600 hover:bg-gray-100 cursor-pointer py-1 px-2 rounded menu-text">Benefícios</li>
+            </ul>
+          </li>
+          <!-- Outros menus omitidos para brevidade -->
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6">
+      <div class="bg-white rounded-lg shadow p-6">
+        <!-- Title and Description -->
+        <h2 class="text-xl font-semibold mb-4">Módulo Folha de Pagamento</h2>
+        <p class="text-gray-600 mb-6">
+          Selecione uma opção no menu lateral para gerenciar as informações de recursos humanos e folha de pagamento.
+        </p>
+
+        <!-- Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Cadastro de Funcionários -->
+          <div class="border border-gray-200 rounded-lg p-5 hover:border-purple-500 transition-colors cursor-pointer">
+            <h3 class="font-medium text-lg mb-2">Cadastro de Funcionários</h3>
+            <p class="text-gray-500 text-sm">Admissão, alterações cadastrais e gestão de funcionários.</p>
+          </div>
+          <!-- Outros cards omitidos para brevidade -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal de Cadastro de Funcionário -->
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Cadastro de Funcionário</h2>
+        <button onclick="closeModal()" class="text-gray-600 hover:text-gray-900">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Abas -->
+      <div class="flex space-x-4 border-b mb-4">
+        <button id="tab-dados-pessoais" class="tab-button active" onclick="openTab('dados-pessoais')">Dados Pessoais</button>
+        <button id="tab-dados-profissionais" class="tab-button" onclick="openTab('dados-profissionais')">Dados Profissionais</button>
+        <button id="tab-documentacao" class="tab-button" onclick="openTab('documentacao')">Documentação</button>
+        <button id="tab-beneficios" class="tab-button" onclick="openTab('beneficios')">Benefícios</button>
+        <button id="tab-outros" class="tab-button" onclick="openTab('outros')">Outros</button>
+      </div>
+
+      <!-- Conteúdo das Abas -->
+      <div id="dados-pessoais" class="tab-content active">
+        <form>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Nome Completo</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">CPF</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">RG</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Data de Nascimento</label>
+              <input type="date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Gênero</label>
+              <select class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option>Masculino</option>
+                <option>Feminino</option>
+                <option>Outro</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Estado Civil</label>
+              <select class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option>Solteiro(a)</option>
+                <option>Casado(a)</option>
+                <option>Divorciado(a)</option>
+                <option>Viúvo(a)</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Nacionalidade</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Telefone</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">E-mail</label>
+              <input type="email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4 col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Endereço Completo</label>
+              <input type="text" placeholder="Rua" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              <div class="grid grid-cols-3 gap-4 mt-2">
+                <input type="text" placeholder="Número" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <input type="text" placeholder="Bairro" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <input type="text" placeholder="Cidade" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <input type="text" placeholder="Estado" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <input type="text" placeholder="CEP" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div id="dados-profissionais" class="tab-content">
+        <form>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Cargo</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Setor/Departamento</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Matrícula</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Data de Admissão</label>
+              <input type="date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Tipo de Contrato</label>
+              <select class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option>CLT</option>
+                <option>PJ</option>
+                <option>Estágio</option>
+                <option>Temporário</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Regime de Trabalho</label>
+              <select class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option>Presencial</option>
+                <option>Híbrido</option>
+                <option>Home Office</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Jornada de Trabalho</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Salário</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div id="documentacao" class="tab-content">
+        <form>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">CTPS (Número, Série e UF)</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">PIS/PASEP</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Título de Eleitor</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">CNH (se necessário para a função)</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4 col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Certificados e Cursos</label>
+              <textarea class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div id="beneficios" class="tab-content">
+        <form>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Vale-Transporte</label>
+              <select class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option>Sim</option>
+                <option>Não</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Vale-Refeição/Alimentação</label>
+              <select class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option>Sim</option>
+                <option>Não</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Plano de Saúde</label>
+              <select class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option>Sim</option>
+                <option>Não</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Seguro de Vida</label>
+              <select class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option>Sim</option>
+                <option>Não</option>
+              </select>
+            </div>
+            <div class="mb-4 col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Outros Benefícios</label>
+              <textarea class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div id="outros" class="tab-content">
+        <form>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Contato de Emergência (Nome e Telefone)</label>
+              <input type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700">Dependentes (Nome, Grau de Parentesco, Data de Nascimento)</label>
+              <textarea class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea>
+            </div>
+            <div class="mb-4 col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Observações Adicionais</label>
+              <textarea class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="flex justify-end mt-6">
+        <button type="button" onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">Cancelar</button>
+        <button type="submit" class="ml-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script para expandir/recolher o sidebar e submenus -->
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const toggleButton = document.getElementById('toggle-sidebar');
+    const modal = document.getElementById('modal');
+
+    toggleButton.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+    });
+
+    function toggleSubmenu(id) {
+      const submenu = document.getElementById(`${id}-submenu`);
+      const arrow = document.getElementById(`${id}-arrow`);
+      submenu.classList.toggle('open');
+      arrow.classList.toggle('rotate-180');
+    }
+
+    function openModal() {
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal() {
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    function openTab(tabName) {
+      // Oculta todos os conteúdos das abas
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // Remove a classe 'active' de todos os botões das abas
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+      });
+
+      // Exibe o conteúdo da aba selecionada
+      document.getElementById(tabName).classList.add('active');
+
+      // Adiciona a classe 'active' ao botão da aba selecionada
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+    }
+
+    // Previne o envio do formulário
+    document.querySelectorAll('form').forEach(form => {
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        alert('Formulário salvo com sucesso!');
+      });
+    });
+  </script>
+</body>
+</html>
